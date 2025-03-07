@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "123817668247",
+    "project_id": "ott-platform-8bff8",
+    "storage_bucket": "ott-platform-8bff8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123817668247:android:e9fa1eb0d9561ce6b743d2",
+        "android_client_info": {
+          "package_name": "com.example.task"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "123817668247-fbh1dstvp11rc8sel5sps1hbshsfng9r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.task",
+            "certificate_hash": "95eeaa4ea5fdc109e3c8781ce1b3633c7e86a16c"
+          }
+        },
+        {
+          "client_id": "123817668247-sekdev1ucjsa78j56tu7aevqfq35l1su.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDchSgeqh2wjfmRARo-j0AdRxnnOB-AwKA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "123817668247-sekdev1ucjsa78j56tu7aevqfq35l1su.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
