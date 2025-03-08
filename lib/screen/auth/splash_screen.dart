@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:task/constant/assets_constant.dart';
 import 'package:task/project_specific/bottom_navigation.dart';
+import 'package:task/screen/auth/language_screen.dart';
 import 'package:task/screen/auth/signin_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -55,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen>
       Get.off(() => const BottomNavigationBarExample(), transition: Transition.fadeIn);
     } else {
       /// ❌ **User is logged out, go to Login**
-      Get.off(() => const SigninScreen(), transition: Transition.fadeIn);
+      Get.off(() => const LanguageSelectionScreen(), transition: Transition.fadeIn);
     }
   }
 

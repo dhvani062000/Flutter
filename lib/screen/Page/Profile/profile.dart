@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -38,8 +39,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// **Fetch Logged-in User from Firebase**
-  void _getCurrentUser() {
-    _user = _auth.currentUser;
+  void _getCurrentUser() async {
+    _user = FirebaseAuth.instance.currentUser;
+
+    if (_user == null) {
+      // User is not logged in, redirect to login screen
+      Get.offAll(() => const SigninScreen());
+      return;
+    }
+
     _nameController.text = _user?.displayName ?? "User Name";
     _emailController.text = _user?.email ?? "user000@gmail.com";
     setState(() {});
@@ -311,12 +319,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierLabel: "Dismiss",
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, _, __) {
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.grey[900], // Dark theme background
+          backgroundColor: Colors.grey[900],
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
             child: Column(
@@ -349,8 +357,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        Get.back(); // ✅ Close the dialog
-                        _signOutUser(); // ✅ Call logout function
+                        Get.back(); // Close dialog
+                        _signOutUser(); // Call logout function
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
@@ -366,19 +374,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return ScaleTransition(
-          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
-          child: child,
-        );
-      },
     );
   }
 
   void _signOutUser() async {
     try {
       final AuthService _authService = AuthService();
+      final GoogleSignIn googleSignIn = GoogleSignIn();
 
+      // Sign out from Firebase
+      await _authService.signOut();
+
+      // Check if user is signed in via Google, then sign out from Google too
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.disconnect(); // Ensures full sign-out
+        await googleSignIn.signOut();
+      }
+
+      // Clear login status from SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // Force Firebase to remove the user session
+      await FirebaseAuth.instance.signOut();
 
       // Navigate to Login Screen
       Get.offAll(() => const SigninScreen());

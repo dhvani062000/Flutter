@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
 
   /// **Login Function (Returns User?)**
   Future<User?> login(String email, String password) async {
@@ -62,6 +65,22 @@ class AuthService {
 
     User? user = _auth.currentUser;
     return isLoggedIn == true && user != null; // ✅ Check both SharedPreferences & FirebaseAuth
+  }
+
+  // ✅ Sign Out Function
+  Future<void> signOut() async {
+    try {
+      // Sign out from FirebaseAuth
+      await _auth.signOut();
+
+      // Sign out from Google if user signed in using Google
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+      }
+    } catch (e) {
+      print("Error signing out: $e");
+      rethrow; // Re-throwing to handle errors outside
+    }
   }
 
   /// **Get Currently Logged-in User (Returns User?)**
