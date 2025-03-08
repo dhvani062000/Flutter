@@ -8,7 +8,6 @@ import 'package:task/constant/assets_constant.dart';
 import 'package:task/constant/color_constant.dart';
 import 'package:task/project_specific/bottom_navigation.dart';
 import 'package:task/project_specific/custom_button.dart';
-import 'package:task/project_specific/text_theme.dart';
 import 'package:task/project_specific/textformfiled.dart';
 import 'package:task/screen/auth/signin_screen.dart';
 
@@ -31,7 +30,6 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  /// **Sign Up Function**
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
@@ -53,7 +51,7 @@ class _SignupScreenState extends State<SignupScreen> {
         Get.offAll(() => const BottomNavigationBarExample());
       }
     } on FirebaseAuthException catch (e) {
-      _showErrorSnackbar(_getFirebaseErrorMessage(e.code));
+      _showErrorSnackbar(e.message ?? "Signup failed");
     } finally {
       setState(() => _isLoading = false);
     }
@@ -66,7 +64,7 @@ class _SignupScreenState extends State<SignupScreen> {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
         setState(() => _isLoading = false);
-        return; // User canceled login
+        return;
       }
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
@@ -84,32 +82,12 @@ class _SignupScreenState extends State<SignupScreen> {
         Get.offAll(() => const BottomNavigationBarExample());
       }
     } on FirebaseAuthException catch (e) {
-      _showErrorSnackbar(_getFirebaseErrorMessage(e.code));
-    } catch (e) {
-      _showErrorSnackbar("Google Sign-In failed. Try again.");
+      _showErrorSnackbar(e.message ?? "Google Sign-In failed");
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-
-  /// **Firebase Error Messages**
-  String _getFirebaseErrorMessage(String errorCode) {
-    switch (errorCode) {
-      case 'email-already-in-use':
-        return "This email is already in use.";
-      case 'weak-password':
-        return "Password must be at least 6 characters.";
-      case 'invalid-email':
-        return "Invalid email format.";
-      case 'network-request-failed':
-        return "Check your internet connection.";
-      default:
-        return "An error occurred. Please try again.";
-    }
-  }
-
-  /// **Snackbar for Errors**
   void _showErrorSnackbar(String message) {
     Get.snackbar(
       "Error",
@@ -123,105 +101,122 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            children: [
-              SizedBox(
-                height: 200,
-                child: Lottie.asset(
-                  'assets/images/animations.json',
-                  width: 400,
-                  fit: BoxFit.fill,
+        child: Column(
+          children: [
+            /// **Animation**
+            SizedBox(
+              height: Get.height * 0.28,
+              child: Lottie.asset(
+                'assets/images/animations.json',
+                width: Get.width * 0.7,
+                fit: BoxFit.contain,
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      CustomTextField(
+                        controller: _nameController,
+                        title: "Full Name",
+                        hintText: "John Doe",
+                        prefixIcon: Icons.person,
+                        validator: (value) => value!.isEmpty ? "Enter your full name" : null,
+                      ),
+                      SizedBox(height: Get.height * 0.02),
+
+                      CustomTextField(
+                        controller: _emailController,
+                        title: "Email",
+                        hintText: "JohnDoe@gmail.com",
+                        prefixIcon: Icons.email,
+                        validator: (value) => value!.isEmpty || !value.contains("@") ? "Enter a valid email" : null,
+                      ),
+                      SizedBox(height: Get.height * 0.02),
+
+                      CustomTextField(
+                        controller: _passwordController,
+                        title: "Password",
+                        hintText: "******",
+                        obscureText: _obscurePassword,
+                        prefixIcon: Icons.lock,
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: Colors.white),
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        ),
+                        validator: (value) => value!.length < 6 ? "Password must be at least 6 characters" : null,
+                      ),
+                      SizedBox(height: Get.height * 0.02),
+
+                      CustomTextField(
+                        controller: _confirmPasswordController,
+                        title: "Confirm Password",
+                        hintText: "******",
+                        obscureText: _obscureConfirmPassword,
+                        prefixIcon: Icons.lock,
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off, color: Colors.white),
+                          onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                        ),
+                        validator: (value) => value != _passwordController.text ? "Passwords do not match" : null,
+                      ),
+                      SizedBox(height: Get.height * 0.03),
+
+                      CustomElevatedButton(
+                        text: _isLoading ? "Loading..." : "Create Account",
+                        backgroundColor: Colors.blueAccent,
+                        onPressed: _isLoading ? () {} : _signup,
+                      ),
+                      SizedBox(height: Get.height * 0.02),
+
+                      /// **Google Sign-In Button**
+                      GestureDetector(
+                        onTap: _signInWithGoogle,
+                        child: Container(
+                          width: Get.width * 0.8,
+                          padding: EdgeInsets.symmetric(vertical: Get.height * 0.015),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            border: Border.all(color: Colors.white, width: 1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(AssetConstant.google, height: Get.height * 0.03),
+                              SizedBox(width: Get.width * 0.03),
+                              Text(
+                                "Continue with Google",
+                                style: TextStyle(color: Colors.white, fontSize: Get.width * 0.045),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: Get.height * 0.02),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text("Already have an account? ", style: TextStyle(color: Colors.white)),
+                          GestureDetector(
+                            onTap: () => Get.to(() => const SigninScreen()),
+                            child: const Text("Sign In", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: Get.height * 0.03),
+                    ],
+                  ),
                 ),
               ),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      controller: _nameController,
-                      title: "Full Name",
-                      hintText: "John Doe",
-                      prefixIcon: Icons.person,
-                      validator: (value) => value!.isEmpty ? "Enter your full name" : null,
-                    ),
-                    CustomTextField(
-                      controller: _emailController,
-                      title: "Email",
-                      hintText: "JohnDoe@gmail.com",
-                      prefixIcon: Icons.email,
-                      validator: (value) => value!.isEmpty || !value.contains("@") ? "Enter a valid email" : null,
-                    ),
-                    CustomTextField(
-                      controller: _passwordController,
-                      title: "Password",
-                      hintText: "******",
-                      obscureText: _obscurePassword,
-                      prefixIcon: Icons.lock,
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                      validator: (value) => value!.length < 6 ? "Password must be at least 6 characters" : null,
-                    ),
-                    CustomTextField(
-                      controller: _confirmPasswordController,
-                      title: "Confirm Password",
-                      hintText: "******",
-                      obscureText: _obscureConfirmPassword,
-                      prefixIcon: Icons.lock,
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                      ),
-                      validator: (value) => value != _passwordController.text ? "Passwords do not match" : null,
-                    ),
-                    const SizedBox(height: 20),
-                    _isLoading
-                        ? const CircularProgressIndicator()
-                        : CustomElevatedButton(
-                      text: "Create Account",
-                      backgroundColor: ColorConstant.primary,
-                      onPressed: _signup,
-                    ),
-                    const SizedBox(height: 20),
-                    GestureDetector(
-                      onTap: _signInWithGoogle,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(AssetConstant.google, height: 24),
-                            const SizedBox(width: 10),
-                            Text("Sign in with Google", style: AppTextTheme.regular.copyWith(color: ColorConstant.blackColor)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text("Already have an account? "),
-                        GestureDetector(
-                          onTap: () => Get.to(() => const SigninScreen()),
-                          child: const Text("Sign In", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

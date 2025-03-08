@@ -4,12 +4,12 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:task/constant/assets_constant.dart';
 import 'package:task/constant/color_constant.dart';
 import 'package:task/project_specific/bottom_navigation.dart';
 import 'package:task/project_specific/custom_button.dart';
 import 'package:task/project_specific/textformfiled.dart';
 import 'package:task/screen/auth/signup_screen.dart';
-import 'package:task/utils/auth_service.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -22,43 +22,32 @@ class _SigninScreenState extends State<SigninScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final AuthService _authService = AuthService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  /// **Login with Email & Password**
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
-
     try {
-      User? user = await _authService.login(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
 
-      if (user != null) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setBool("isLoggedIn", true);
-
-        Get.offAll(() => const BottomNavigationBarExample());
-      } else {
-        _showErrorSnackbar("Invalid email or password");
-      }
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool("isLoggedIn", true);
+      Get.offAll(() => const BottomNavigationBarExample());
     } on FirebaseAuthException catch (e) {
-      _showErrorSnackbar(_getFirebaseErrorMessage(e.code));
+      _showSnackbar(e.message ?? "Login failed");
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  /// **Google Sign-In**
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
-
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
@@ -72,57 +61,18 @@ class _SigninScreenState extends State<SigninScreen> {
         idToken: googleAuth.idToken,
       );
 
-      UserCredential userCredential = await _auth.signInWithCredential(credential);
-      if (userCredential.user != null) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setBool("isLoggedIn", true);
-        Get.offAll(() => const BottomNavigationBarExample());
-      }
+      await _auth.signInWithCredential(credential);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool("isLoggedIn", true);
+      Get.offAll(() => const BottomNavigationBarExample());
     } catch (e) {
-      _showErrorSnackbar("Google Sign-In failed. Try again.");
+      _showSnackbar("Google Sign-In failed. Try again.");
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  /// **Forgot Password?**
-  Future<void> _forgotPassword() async {
-    if (_emailController.text.isEmpty) {
-      _showErrorSnackbar("Enter your email to reset password.");
-      return;
-    }
-
-    try {
-      await _auth.sendPasswordResetEmail(email: _emailController.text.trim());
-      Get.snackbar(
-        "Password Reset",
-        "A password reset link has been sent to your email.",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      _showErrorSnackbar("Failed to send reset email. Try again.");
-    }
-  }
-
-  /// **Error Handling**
-  String _getFirebaseErrorMessage(String errorCode) {
-    switch (errorCode) {
-      case 'user-not-found':
-        return "No user found with this email.";
-      case 'wrong-password':
-        return "Incorrect password.";
-      case 'network-request-failed':
-        return "Check your internet connection.";
-      case 'too-many-requests':
-        return "Too many login attempts. Try later.";
-      default:
-        return "An error occurred. Please try again.";
-    }
-  }
-
-  void _showErrorSnackbar(String message) {
+  void _showSnackbar(String message) {
     Get.snackbar(
       "Error",
       message,
@@ -135,101 +85,106 @@ class _SigninScreenState extends State<SigninScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
+            /// **Animation**
             SizedBox(
-              height: 250,
+              height: Get.height * 0.28,
               child: Lottie.asset(
                 'assets/images/animations.json',
-                width: 400,
-                fit: BoxFit.fill,
+                width: Get.width * 0.7,
+                fit: BoxFit.contain,
               ),
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
                 child: Form(
                   key: _formKey,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      /// **Email Input**
                       CustomTextField(
                         controller: _emailController,
                         title: 'Email',
-                        hintText: 'JohnDoe@gmail.com',
+                        hintText: 'Enter your email',
                         prefixIcon: Icons.email,
                         validator: (value) => value!.isEmpty ? "Enter a valid email" : null,
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: Get.height * 0.02), // Added spacing
+
+                      /// **Password Input**
                       CustomTextField(
                         controller: _passwordController,
                         title: 'Password',
-                        hintText: '******',
+                        hintText: 'Enter your password',
                         obscureText: _obscurePassword,
                         prefixIcon: Icons.lock,
                         suffixIcon: IconButton(
-                          icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            color: Colors.white,
+                          ),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                         validator: (value) => value!.length < 6 ? "Password must be at least 6 characters" : null,
                       ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: _forgotPassword,
-                          child: const Text(
-                            "Forgot Password?",
-                            style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                      SizedBox(height: Get.height * 0.03), // Added spacing
+
+                      /// **Login Button**
+                      CustomElevatedButton(
+                        text: _isLoading ? "Loading..." : "Login",
+                        backgroundColor: Colors.blueAccent,
+                        onPressed: _isLoading ? () {} : _login,
+                      ),
+                      SizedBox(height: Get.height * 0.02), // Added spacing
+
+                      /// **Google Sign-In Button**
+                      GestureDetector(
+                        onTap: _signInWithGoogle,
+                        child: Container(
+                          width: Get.width * 0.8,
+                          padding: EdgeInsets.symmetric(vertical: Get.height * 0.015),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            border: Border.all(color: Colors.white, width: 1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(AssetConstant.google, height: Get.height * 0.03),
+                              SizedBox(width: Get.width * 0.03),
+                              Text(
+                                "Continue with Google",
+                                style: TextStyle(color: Colors.white, fontSize: Get.width * 0.045),
+                              ),
+                            ],
                           ),
                         ),
                       ),
+                      SizedBox(height: Get.height * 0.02), // Added spacing
+
+                      /// **Sign Up Link**
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text("Don't have an account? ", style: TextStyle(color: Colors.white)),
+                          GestureDetector(
+                            onTap: () => Get.to(() => const SignupScreen()),
+                            child: const Text(
+                              "Sign up",
+                              style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: Get.height * 0.03), // Added spacing
                     ],
                   ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  CustomElevatedButton(
-                    text: _isLoading ? "Loading..." : "Login",
-                    backgroundColor: ColorConstant.primary,
-                    onPressed: _isLoading ? (){} : _login,
-                  ),
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: _signInWithGoogle,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset('assets/images/google_icon.png', height: 24),
-                          const SizedBox(width: 10),
-                          Text("Sign in with Google", style: TextStyle(color: ColorConstant.blackColor)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't have an account? "),
-                      GestureDetector(
-                        onTap: () => Get.to(() => const SignupScreen()),
-                        child: const Text("Sign up", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ),
           ],
